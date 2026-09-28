@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="ja" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>侑吾株式会社 | Yugo Inc. - Cyber City & OS Portal</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        pixel: {
+                            bg: '#080d1a',
+                            panel: '#0f172a',
+                            cyan: '#00f3ff',
+                            magenta: '#ff007f',
+                            yellow: '#ffcc00',
+                            green: '#00ff88',
+                            purple: '#9d4edd'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans JP', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+                        pixel: ['"Press Start 2P"', 'monospace']
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s infinite alternate',
+                        'float': 'float 3.5s ease-in-out infinite',
+                        'scanline': 'scanline 8s linear infinite'
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%': { boxShadow: '0 0 10px rgba(0,243,255,0.3)', borderColor: 'rgba(0,243,255,0.4)' },
+                            '100%': { boxShadow: '0 0 30px rgba(0,243,255,0.9)', borderColor: 'rgba(0,243,255,1)' }
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' }
+                        },
+                        scanline: {
+                            '0%': { transform: 'translateY(-100%)' },
+                            '100%': { transform: 'translateY(100%)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Icons & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+JP:wght@300;500;700;900&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            background-color: #050811;
+            color: #f1f5f9;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 100;
+            opacity: 0.3;
+        }
+
+        /* Glass Window Styles */
+        .os-window {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .glow-cyan { text-shadow: 0 0 10px rgba(0, 243, 255, 0.8); }
+        .glow-magenta { text-shadow: 0 0 10px rgba(255, 0, 127, 0.8); }
+        .glow-yellow { text-shadow: 0 0 10px rgba(255, 204, 0, 0.8); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #080d1a; }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+            border: 1px solid #00f3ff;
+        }
+
+        /* Custom Range Input */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: #1e293b;
+            border-radius: 8px;
+            height: 8px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #00f3ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00f3ff;
+        }
+    </style>
+</head>
+<body class="relative min-h-screen overflow-hidden">
+
+    <!-- Scanline Effect -->
+    <div class="scanlines"></div>
+
+    <!-- Top System Header Taskbar -->
+    <header class="fixed top-0 left-0 w-full z-50 px-4 py-2 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 flex items-center justify-between font-mono text-xs">
+        <div class="flex items-center gap-4">
+            <!-- Brand & OS Indicator -->
+            <button onclick="toggleWindow('win-about')" class="flex items-center gap-2 hover:opacity-80 transition-all">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-pixel-cyan to-pixel-magenta p-[1px]">
+                    <div class="w-full h-full bg-slate-950 rounded-[7px] flex items-center justify-center text-pixel-cyan font-black">
+                        侑
+                    </div>
+                </div>
+                <span class="font-bold text-white tracking-wider hidden sm:inline">侑吾株式会社 <span class="text-pixel-cyan">YUGO-OS v4.2</span></span>
+            </button>
+
+            <!-- Window Quick Shortcuts -->
+            <div class="hidden md:flex items-center gap-1 bg-slate-900/90 px-2 py-1 rounded-xl border border-slate-800">
+                <button onclick="toggleWindow('win-city')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-cyan hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-city text-pixel-cyan"></i> City Map
+                </button>
+                <button onclick="toggleWindow('win-services')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-cyan hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-microchip text-pixel-purple"></i> Services
+                </button>
+                <button onclick="toggleWindow('win-quest')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-yellow hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-gamepad text-pixel-yellow"></i> DX Quest
+                </button>
+                <button onclick="toggleWindow('win-roi')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-green hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-chart-line text-pixel-green"></i> ROI Calc
+                </button>
+                <button onclick="toggleWindow('win-ai')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-cyan hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-robot text-pixel-cyan"></i> AI Agent
+                </button>
+                <button onclick="toggleWindow('win-contact')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-pixel-magenta hover:bg-slate-800 transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-paper-plane text-pixel-magenta"></i> Contact
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Tools: Clock, Sound Toggle, Fullscreen -->
+        <div class="flex items-center gap-3">
+            <span id="os-clock" class="text-pixel-cyan font-bold">17:00 JST</span>
+
+            <button onclick="toggleAudio()" id="sound-btn" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center hover:text-pixel-cyan hover:border-pixel-cyan transition-all">
+                <i id="sound-icon" class="fa-solid fa-volume-xmark"></i>
+            </button>
+
+            <button onclick="toggleFullscreen()" class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 flex items-center justify-center hover:text-pixel-cyan hover:border-pixel-cyan transition-all">
+                <i class="fa-solid fa-expand"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Desktop Background Canvas (2D Isometric City) -->
+    <div class="relative w-full h-screen pt-12">
+        <canvas id="city-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Floating City Overlay Hints -->
+        <div class="absolute bottom-6 left-6 pointer-events-none hidden sm:block font-mono text-xs text-slate-400 bg-slate-950/80 p-3 rounded-xl border border-slate-800/80 backdrop-blur-md">
+            <span class="text-pixel-cyan font-bold block mb-1"><i class="fa-solid fa-mouse"></i> CITY MAP CONTROLS</span>
+            <span>• Building Click: Open Division Window<br>• Drag Mouse: Pan Camera Map</span>
+        </div>
+    </div>
+
+
+    <!-- WINDOW 1: CITY MAP DIVISION INSPECTOR -->
+    <div id="win-city" class="os-window fixed top-16 left-4 sm:left-12 w-[92vw] sm:w-[500px] rounded-2xl z-40 hidden font-mono text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move">
+            <span class="font-bold text-pixel-cyan flex items-center gap-2">
+                <i class="fa-solid fa-city"></i> Yugo Digital City Inspector
+            </span>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleWindow('win-city')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+            </div>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="flex items-center gap-4">
+                <div id="city-inspect-icon" class="w-14 h-14 rounded-2xl bg-pixel-cyan/10 border border-pixel-cyan/40 text-pixel-cyan flex items-center justify-center text-2xl">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div>
+                    <h3 id="city-inspect-title" class="text-lg font-bold text-white">AI Systems Division (Building #1)</h3>
+                    <span id="city-inspect-subtitle" class="text-pixel-cyan text-[11px]">AI HQ & Machine Learning Center</span>
+                </div>
+            </div>
+            <p id="city-inspect-desc" class="text-slate-300 font-sans text-xs leading-relaxed">
+                自律型AIエージェント、LLM構築、社内RAG検索エンジンの開発を担当する侑吾株式会社のフラッグシップ部門です。
+            </p>
+            <div class="pt-2 border-t border-slate-800/80 flex justify-between items-center">
+                <span class="text-slate-400">実績導入企業: 120社+</span>
+                <button onclick="toggleWindow('win-services')" class="px-4 py-2 rounded-xl bg-pixel-cyan/20 border border-pixel-cyan/50 text-pixel-cyan font-bold hover:bg-pixel-cyan hover:text-slate-950 transition-all">
+                    詳細サービスを見る
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 2: SERVICES & CASE STUDIES -->
+    <div id="win-services" class="os-window fixed top-20 left-4 sm:left-24 w-[92vw] sm:w-[720px] max-h-[80vh] rounded-2xl z-30 hidden overflow-hidden font-sans text-xs flex flex-col">
+        <div class="window-header bg-slate-900/90 px-4 py-3 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move font-mono">
+            <span class="font-bold text-pixel-purple flex items-center gap-2">
+                <i class="fa-solid fa-microchip"></i> 侑吾株式会社 - サービス & ソリューション一覧
+            </span>
+            <button onclick="toggleWindow('win-services')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-6">
+            <!-- Services Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-pixel-cyan transition-all">
+                    <i class="fa-solid fa-brain text-2xl text-pixel-cyan mb-3 block"></i>
+                    <h4 class="font-bold text-white text-sm mb-1">自律型AI & LLM 開発</h4>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        オープンソースLLMのファインチューニングおよび社内データ統合RAG構築。
+                    </p>
+                </div>
+                <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-pixel-purple transition-all">
+                    <i class="fa-solid fa-cloud-bolt text-2xl text-pixel-purple mb-3 block"></i>
+                    <h4 class="font-bold text-white text-sm mb-1">クラウドアーキテクチャ & DevOps</h4>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        AWS / Google Cloud での超並列コンテナオーケストレーションとCI/CD完全自動化。
+                    </p>
+                </div>
+                <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-pixel-green transition-all">
+                    <i class="fa-solid fa-shield-halved text-2xl text-pixel-green mb-3 block"></i>
+                    <h4 class="font-bold text-white text-sm mb-1">ゼロトラスト・セキュリティ</h4>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        ID管理からエッジ端末防衛まで網羅するポスト量子暗号統合セキュリティ。
+                    </p>
+                </div>
+                <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-pixel-yellow transition-all">
+                    <i class="fa-solid fa-rocket text-2xl text-pixel-yellow mb-3 block"></i>
+                    <h4 class="font-bold text-white text-sm mb-1">次世代Web & モバイルアプリ</h4>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        React / Flutter / WebGL を駆使した超高速かつ美しいプロダクト開発。
+                    </p>
+                </div>
+            </div>
+
+            <!-- Case Study Stats Banner -->
+            <div class="p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-pixel-purple/20 to-slate-900 border border-pixel-purple/30 font-mono">
+                <span class="text-pixel-purple font-bold text-[10px] uppercase block mb-2">// 導入実績統計 (CASE STUDY STATS)</span>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                        <span class="text-xl font-bold text-white block">99.98%</span>
+                        <span class="text-[9px] text-slate-400">システム稼働率</span>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold text-pixel-cyan block">68%</span>
+                        <span class="text-[9px] text-slate-400">平均運用コスト削減</span>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold text-pixel-green block">150+</span>
+                        <span class="text-[9px] text-slate-400">プロジェクト成功事例</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 3: INTERACTIVE MINI-RPG QUEST GAME -->
+    <div id="win-quest" class="os-window fixed top-12 left-4 sm:left-1/2 sm:-translate-x-1/2 w-[92vw] sm:w-[600px] rounded-2xl z-50 hidden font-mono text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move">
+            <span class="font-bold text-pixel-yellow flex items-center gap-2">
+                <i class="fa-solid fa-gamepad"></i> Future Upgrade Quest - Yugo Mini-Game
+            </span>
+            <button onclick="toggleWindow('win-quest')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-4 space-y-3 bg-slate-950">
+            <div class="flex justify-between items-center text-[11px]">
+                <span class="text-slate-300">SCORE: <span id="quest-score" class="text-pixel-yellow font-bold">0</span></span>
+                <span class="text-slate-300">DX CUBES: <span id="quest-cubes" class="text-pixel-cyan font-bold">0 / 5</span></span>
+                <button onclick="initQuestGame()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200">Reset</button>
+            </div>
+
+            <!-- Game Canvas -->
+            <div class="relative w-full h-64 bg-slate-900 rounded-xl overflow-hidden border border-slate-800">
+                <canvas id="quest-canvas" class="w-full h-full"></canvas>
+
+                <div id="quest-complete-screen" class="absolute inset-0 bg-black/85 backdrop-blur-sm hidden flex flex-col items-center justify-center p-6 text-center space-y-3">
+                    <i class="fa-solid fa-trophy text-4xl text-pixel-yellow animate-bounce"></i>
+                    <h3 class="text-base font-bold text-white glow-yellow">QUEST COMPLETED!</h3>
+                    <p class="text-[11px] text-slate-300">
+                        街のバグを排除し、DXキューブを全て回収しました！<br>
+                        特別優待コード: <span class="text-pixel-cyan font-bold">YUGO-QUEST-2026</span>
+                    </p>
+                    <button onclick="applyQuestReward()" class="px-4 py-2 rounded-xl bg-pixel-yellow text-slate-950 font-bold hover:scale-105 transition-all">
+                        お問い合わせにコードを適用
+                    </button>
+                </div>
+            </div>
+
+            <!-- Controls Info -->
+            <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1">
+                <span>移動: [W][A][S][D] または 矢印キー</span>
+                <span>ミッション: キューブを集めてバグを消去！</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 4: ROI & DX HOLOGRAM SIMULATOR -->
+    <div id="win-roi" class="os-window fixed top-24 left-4 sm:left-32 w-[92vw] sm:w-[650px] rounded-2xl z-30 hidden font-mono text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move">
+            <span class="font-bold text-pixel-green flex items-center gap-2">
+                <i class="fa-solid fa-chart-line"></i> DX ROI コスト削減 & 影響度シミュレーター
+            </span>
+            <button onclick="toggleWindow('win-roi')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between mb-1.5">
+                        <span class="text-slate-300">1. 従業員規模:</span>
+                        <span id="roi-scale-label" class="text-pixel-green font-bold">200 名</span>
+                    </div>
+                    <input type="range" id="roi-scale-slider" min="10" max="1000" step="10" value="200" oninput="updateRoiCalc()" class="w-full">
+                </div>
+
+                <div>
+                    <div class="flex justify-between mb-1.5">
+                        <span class="text-slate-300">2. クラウド・AI統合度:</span>
+                        <span id="roi-cloud-label" class="text-pixel-cyan font-bold">60%</span>
+                    </div>
+                    <input type="range" id="roi-cloud-slider" min="10" max="100" step="5" value="60" oninput="updateRoiCalc()" class="w-full">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center bg-slate-900/90 p-5 rounded-2xl border border-slate-800">
+                <div>
+                    <span class="text-slate-400 text-[10px] block mb-1">// ESTIMATED SAVINGS</span>
+                    <div id="roi-savings-text" class="text-2xl font-bold text-pixel-green glow-cyan">
+                        年間 3,600 万円 削減
+                    </div>
+                    <span class="text-[10px] text-slate-400 block mt-2">業務効率化による工数削減換算</span>
+                </div>
+                <div class="h-28">
+                    <canvas id="roi-chart-canvas" class="w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 5: AI AGENT CONSULTANT SIMULATOR -->
+    <div id="win-ai" class="os-window fixed top-20 right-4 sm:right-12 w-[92vw] sm:w-[480px] rounded-2xl z-40 hidden font-mono text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move">
+            <span class="font-bold text-pixel-cyan flex items-center gap-2">
+                <i class="fa-solid fa-robot"></i> Yugo AI Agent Consultant
+            </span>
+            <button onclick="toggleWindow('win-ai')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-4 bg-slate-950 space-y-3">
+            <div id="ai-chat-logs" class="h-60 overflow-y-auto p-3 bg-slate-900/80 rounded-xl border border-slate-800 space-y-2.5 text-[11px]">
+                <div class="text-pixel-cyan">
+                    🤖 [YUGO-AI]: こんにちは！侑吾株式会社のAIコンサルタントです。ご希望のDX施策や技術スタックについてお気軽にご質問ください。
+                </div>
+            </div>
+
+            <!-- Quick Chips -->
+            <div class="flex flex-wrap gap-1.5 pt-1">
+                <button onclick="sendAiQuick('開発費用について')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-pixel-cyan hover:text-pixel-cyan">
+                    開発予算目安
+                </button>
+                <button onclick="sendAiQuick('自律型AIの導入手順')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-pixel-cyan hover:text-pixel-cyan">
+                    AI導入ステップ
+                </button>
+                <button onclick="sendAiQuick('セキュリティ対策')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:border-pixel-cyan hover:text-pixel-cyan">
+                    セキュリティ
+                </button>
+            </div>
+
+            <form onsubmit="handleAiSubmit(event)" class="flex items-center gap-2 pt-1">
+                <input type="text" id="ai-input" placeholder="質問を入力..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-white outline-none focus:border-pixel-cyan">
+                <button type="submit" class="px-4 py-2 bg-pixel-cyan text-slate-950 font-bold rounded-xl hover:opacity-90">
+                    送信
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- WINDOW 6: ABOUT & COMPANY PROFILE -->
+    <div id="win-about" class="os-window fixed top-16 left-4 sm:left-20 w-[92vw] sm:w-[620px] rounded-2xl z-30 hidden font-sans text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move font-mono">
+            <span class="font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-building text-pixel-cyan"></i> 侑吾株式会社 - 会社概要 & Vision
+            </span>
+            <button onclick="toggleWindow('win-about')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div>
+                <h3 class="text-xl font-bold text-white mb-2">「テクノロジーの境界線を越え、次の時代を創る」</h3>
+                <p class="text-slate-300 text-xs leading-relaxed">
+                    侑吾株式会社（Yugo Inc.）は、自律型AI・次世代クラウド・高度なサイバーセキュリティを融合し、企業のあらゆるデジタル課題を次元レベルで解決するテクノロジーカンパニーです。
+                </p>
+            </div>
+
+            <!-- Profile Table -->
+            <div class="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 font-mono text-[11px] space-y-2">
+                <div class="flex justify-between border-b border-slate-800/80 pb-2">
+                    <span class="text-slate-400">社名</span>
+                    <span class="text-white font-bold">侑吾株式会社 (Yugo Inc.)</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800/80 pb-2">
+                    <span class="text-slate-400">設立</span>
+                    <span class="text-white">2021年4月</span>
+                </div>
+                <div class="flex justify-between border-b border-slate-800/80 pb-2">
+                    <span class="text-slate-400">所在地</span>
+                    <span class="text-white">東京都港区六本木 7-8-9 Cyber Tower 18F</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">事業内容</span>
+                    <span class="text-pixel-cyan">AI integration / Cloud / Security / Web3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WINDOW 7: CONTACT & LEAD FORM -->
+    <div id="win-contact" class="os-window fixed top-16 right-4 sm:right-16 w-[92vw] sm:w-[540px] rounded-2xl z-40 hidden font-mono text-xs">
+        <div class="window-header bg-slate-900/90 px-4 py-2.5 rounded-t-2xl border-b border-slate-800 flex items-center justify-between cursor-move">
+            <span class="font-bold text-pixel-magenta flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane"></i> お問い合わせ & プロジェクト相談
+            </span>
+            <button onclick="toggleWindow('win-contact')" class="w-3.5 h-3.5 rounded-full bg-red-500 hover:opacity-80"></button>
+        </div>
+        <div class="p-6">
+            <form id="contact-form" onsubmit="submitContactForm(event)" class="space-y-4">
+                <div>
+                    <label class="block text-slate-300 mb-1">お名前 *</label>
+                    <input type="text" required placeholder="侑吾 太郎" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white outline-none focus:border-pixel-magenta">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-1">貴社名 & メールアドレス *</label>
+                    <input type="email" required placeholder="yugo@example.com" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white outline-none focus:border-pixel-magenta">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-1">RPG特典・割引コード (任意)</label>
+                    <input type="text" id="contact-code-input" placeholder="YUGO-QUEST-2026" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-pixel-yellow outline-none focus:border-pixel-magenta">
+                </div>
+                <div>
+                    <label class="block text-slate-300 mb-1">ご相談内容 *</label>
+                    <textarea required rows="3" placeholder="AI導入、クラウド移行、見積もり希望など" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white outline-none focus:border-pixel-magenta"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 rounded-xl bg-gradient-to-r from-pixel-magenta to-pixel-purple text-white font-bold hover:shadow-[0_0_20px_rgba(255,0,127,0.6)] transition-all">
+                    送信する // TRANSMIT
+                </button>
+            </form>
+
+            <div id="contact-sent" class="hidden text-center py-8 space-y-3">
+                <i class="fa-solid fa-circle-check text-4xl text-pixel-green"></i>
+                <h4 class="text-base font-bold text-white">送信が完了しました</h4>
+                <p class="text-slate-400 text-[11px]">
+                    お問い合わせありがとうございます。担当者より24時間以内にご返信いたします。
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. Web Audio API Sound Synth Engine
+           ========================================================================== */
+        let audioCtx = null;
+        let isMuted = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function toggleAudio() {
+            initAudio();
+            isMuted = !isMuted;
+            const btn = document.getElementById('sound-btn');
+            const icon = document.getElementById('sound-icon');
+            if (isMuted) {
+                icon.className = 'fa-solid fa-volume-xmark';
+                btn.classList.remove('border-pixel-cyan', 'text-pixel-cyan');
+            } else {
+                icon.className = 'fa-solid fa-volume-high text-pixel-cyan';
+                btn.classList.add('border-pixel-cyan', 'text-pixel-cyan');
+                playSynthSound('beep');
+            }
+        }
+
+        function playSynthSound(type) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.exponentialRampToValueAtTime(220, now + 0.04);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            } else if (type === 'beep') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'pickup') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                osc.start(now);
+                osc.stop(now + 0.12);
+            }
+        }
+
+        /* ==========================================================================
+           2. OS Window Management & Draggable Header Logic
+           ========================================================================== */
+        function toggleWindow(winId) {
+            playSynthSound('click');
+            const win = document.getElementById(winId);
+            if (!win) return;
+            if (win.classList.contains('hidden')) {
+                win.classList.remove('hidden');
+            } else {
+                win.classList.add('hidden');
+            }
+        }
+
+        // Draggable Window Setup
+        document.querySelectorAll('.window-header').forEach(header => {
+            let isDragging = false;
+            let offsetX, offsetY;
+            const win = header.parentElement;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - win.offsetLeft;
+                offsetY = e.clientY - win.offsetTop;
+                // Bring to front
+                document.querySelectorAll('.os-window').forEach(w => w.style.zIndex = '30');
+                win.style.zIndex = '50';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    win.style.left = `${e.clientX - offsetX}px`;
+                    win.style.top = `${e.clientY - offsetY}px`;
+                }
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+        });
+
+        /* ==========================================================================
+           3. Clock & Utility Functions
+           ========================================================================== */
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('os-clock').innerText = `${h}:${m} JST`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function toggleFullscreen() {
+            playSynthSound('click');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        /* ==========================================================================
+           4. Desktop City Isometric Canvas Engine
+           ========================================================================== */
+        const cityCanvas = document.getElementById('city-canvas');
+        const cityCtx = cityCanvas.getContext('2d');
+
+        function resizeCityCanvas() {
+            cityCanvas.width = cityCanvas.parentElement.clientWidth;
+            cityCanvas.height = cityCanvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCityCanvas);
+        resizeCityCanvas();
+
+        const buildings = [
+            { id: 'ai', name: 'AI Systems HQ', x: -120, y: -60, color: '#00f3ff', desc: '自律型AI・LLM構築部門', icon: 'fa-brain' },
+            { id: 'cloud', name: 'Cloud Mesh Citadel', x: 100, y: -100, color: '#9d4edd', desc: '次世代クラウド＆K8s開発部門', icon: 'fa-cloud-bolt' },
+            { id: 'security', name: 'Zero Trust Tower', x: -60, y: 100, color: '#00ff88', desc: 'セキュリティ＆量子暗号部門', icon: 'fa-shield-halved' },
+            { id: 'lab', name: 'Innovation Lab', x: 120, y: 80, color: '#ffcc00', desc: 'R&D・Web3新規事業ラボ', icon: 'fa-rocket' }
+        ];
+
+        let camX = 0, camY = 0;
+        let isPanning = false, startX, startY;
+
+        cityCanvas.addEventListener('mousedown', (e) => {
+            isPanning = true;
+            startX = e.clientX - camX;
+            startY = e.clientY - camY;
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                camX = e.clientX - startX;
+                camY = e.clientY - startY;
+            }
+        });
+        window.addEventListener('mouseup', () => isPanning = false);
+
+        cityCanvas.addEventListener('click', (e) => {
+            const rect = cityCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left - cityCanvas.width / 2 - camX;
+            const clickY = e.clientY - rect.top - cityCanvas.height / 2 - camY;
+
+            for (let b of buildings) {
+                const dist = Math.hypot(clickX - b.x, clickY - b.y);
+                if (dist < 45) {
+                    playSynthSound('beep');
+                    document.getElementById('city-inspect-title').innerText = b.name;
+                    document.getElementById('city-inspect-subtitle').innerText = b.desc;
+                    document.getElementById('city-inspect-icon').innerHTML = `<i class="fa-solid ${b.icon}"></i>`;
+                    toggleWindow('win-city');
+                    break;
+                }
+            }
+        });
+
+        function drawIsometricCity() {
+            cityCtx.clearRect(0, 0, cityCanvas.width, cityCanvas.height);
+            const cx = cityCanvas.width / 2 + camX;
+            const cy = cityCanvas.height / 2 + camY;
+
+            // Draw Grid Lines
+            cityCtx.strokeStyle = 'rgba(0, 243, 255, 0.08)';
+            cityCtx.lineWidth = 1;
+            for (let i = -600; i <= 600; i += 60) {
+                cityCtx.beginPath();
+                cityCtx.moveTo(cx + i, cy - 300);
+                cityCtx.lineTo(cx + i / 2, cy + 300);
+                cityCtx.stroke();
+            }
+
+            // Draw Buildings
+            for (let b of buildings) {
+                const bx = cx + b.x;
+                const by = cy + b.y;
+
+                // Base Shadow
+                cityCtx.fillStyle = 'rgba(0,0,0,0.5)';
+                cityCtx.beginPath();
+                cityCtx.ellipse(bx, by + 20, 35, 18, 0, 0, Math.PI * 2);
+                cityCtx.fill();
+
+                // Isometric Pillar
+                cityCtx.fillStyle = b.color;
+                cityCtx.beginPath();
+                cityCtx.roundRect(bx - 25, by - 40, 50, 60, 10);
+                cityCtx.fill();
+
+                // Glow Top
+                cityCtx.fillStyle = '#ffffff';
+                cityCtx.beginPath();
+                cityCtx.arc(bx, by - 30, 8, 0, Math.PI * 2);
+                cityCtx.fill();
+
+                // Text Tag
+                cityCtx.fillStyle = '#ffffff';
+                cityCtx.font = 'bold 11px JetBrains Mono';
+                cityCtx.textAlign = 'center';
+                cityCtx.fillText(b.name, bx, by + 38);
+            }
+
+            requestAnimationFrame(drawIsometricCity);
+        }
+
+        /* ==========================================================================
+           5. Interactive Mini-RPG Quest Logic
+           ========================================================================== */
+        const questCanvas = document.getElementById('quest-canvas');
+        const questCtx = questCanvas.getContext('2d');
+        let player = { x: 50, y: 50, size: 16, speed: 3 };
+        let cubes = [];
+        let score = 0;
+        let keys = {};
+
+        function initQuestGame() {
+            score = 0;
+            cubes = [];
+            document.getElementById('quest-score').innerText = '0';
+            document.getElementById('quest-cubes').innerText = '0 / 5';
+            document.getElementById('quest-complete-screen').classList.add('hidden');
+
+            for (let i = 0; i < 5; i++) {
+                cubes.push({
+                    x: Math.random() * (questCanvas.width - 40) + 20,
+                    y: Math.random() * (questCanvas.height - 40) + 20,
+                    active: true
+                });
+            }
+        }
+
+        window.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        function updateQuestGame() {
+            if (keys['w'] || keys['arrowup']) player.y = Math.max(10, player.y - player.speed);
+            if (keys['s'] || keys['arrowdown']) player.y = Math.min(questCanvas.height - 25, player.y + player.speed);
+            if (keys['a'] || keys['arrowleft']) player.x = Math.max(10, player.x - player.speed);
+            if (keys['d'] || keys['arrowright']) player.x = Math.min(questCanvas.width - 25, player.x + player.speed);
+
+            let collected = 0;
+            for (let c of cubes) {
+                if (c.active) {
+                    if (Math.hypot(player.x - c.x, player.y - c.y) < 20) {
+                        c.active = false;
+                        playSynthSound('pickup');
+                        score += 100;
+                        document.getElementById('quest-score').innerText = score;
+                    }
+                } else {
+                    collected++;
+                }
+            }
+            document.getElementById('quest-cubes').innerText = `${collected} / 5`;
+
+            if (collected === 5) {
+                document.getElementById('quest-complete-screen').classList.remove('hidden');
+            }
+
+            // Draw Quest Canvas
+            questCtx.clearRect(0, 0, questCanvas.width, questCanvas.height);
+
+            // Draw Cubes
+            for (let c of cubes) {
+                if (c.active) {
+                    questCtx.fillStyle = '#00f3ff';
+                    questCtx.fillRect(c.x - 6, c.y - 6, 12, 12);
+                }
+            }
+
+            // Draw Player Robot
+            questCtx.fillStyle = '#ffcc00';
+            questCtx.beginPath();
+            questCtx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
+            questCtx.fill();
+
+            requestAnimationFrame(updateQuestGame);
+        }
+
+        function applyQuestReward() {
+            playSynthSound('click');
+            document.getElementById('contact-code-input').value = 'YUGO-QUEST-2026';
+            toggleWindow('win-quest');
+            toggleWindow('win-contact');
+        }
+
+        /* ==========================================================================
+           6. ROI Calculator Logic
+           ========================================================================== */
+        function updateRoiCalc() {
+            const emp = document.getElementById('roi-scale-slider').value;
+            const cloud = document.getElementById('roi-cloud-slider').value;
+            document.getElementById('roi-scale-label').innerText = `${emp} 名`;
+            document.getElementById('roi-cloud-label').innerText = `${cloud}%`;
+
+            const savings = Math.round((emp * 15) * (cloud / 100) * 1.2);
+            document.getElementById('roi-savings-text').innerText = `年間 ${savings.toLocaleString()} 万円 削減`;
+            drawRoiChart(savings);
+        }
+
+        function drawRoiChart(val) {
+            const c = document.getElementById('roi-chart-canvas');
+            if (!c) return;
+            const ctx = c.getContext('2d');
+            c.width = c.parentElement.clientWidth;
+            c.height = c.parentElement.clientHeight;
+
+            ctx.clearRect(0, 0, c.width, c.height);
+            ctx.fillStyle = '#00ff88';
+            ctx.fillRect(20, c.height - 40, 40, 30);
+            ctx.fillRect(80, c.height - 70, 40, 60);
+            ctx.fillRect(140, c.height - 100, 40, 90);
+        }
+
+        /* ==========================================================================
+           7. AI Agent Simulator
+           ========================================================================== */
+        function handleAiSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('ai-input');
+            if (!input.value.trim()) return;
+            sendAiQuick(input.value.trim());
+            input.value = '';
+        }
+
+        function sendAiQuick(msg) {
+            playSynthSound('click');
+            const logs = document.getElementById('ai-chat-logs');
+            logs.innerHTML += `<div class="text-white text-right">👤 [YOU]: ${msg}</div>`;
+
+            let reply = "侑吾株式会社の専門チームがお手伝い可能です。お問い合わせフォームより詳細をお知らせください。";
+            if (msg.includes('費用')) reply = "導入規模に応じて月額30万円〜個別見積もりを承っております。";
+            if (msg.includes('手順')) reply = "①ヒアリング → ②PoC（概念実証） → ③本構築 → ④運用伴走 の4ステップで展開します。";
+
+            setTimeout(() => {
+                logs.innerHTML += `<div class="text-pixel-cyan">🤖 [YUGO-AI]: ${reply}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            }, 300);
+        }
+
+        function submitContactForm(e) {
+            e.preventDefault();
+            playSynthSound('beep');
+            document.getElementById('contact-form').classList.add('hidden');
+            document.getElementById('contact-sent').classList.remove('hidden');
+        }
+
+        // Initialize on Load
+        window.onload = function() {
+            drawIsometricCity();
+            initQuestGame();
+            updateQuestGame();
+            updateRoiCalc();
+
+            // Default open City and Services window
+            toggleWindow('win-city');
+        };
+    </script>
+</body>
+</html>
